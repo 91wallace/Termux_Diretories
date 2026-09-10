@@ -78,6 +78,7 @@ const bridgeStatusDot = document.getElementById('bridge-status-dot');
 const bridgeStatusText = document.getElementById('bridge-status-text');
 const termuxAppInput = document.getElementById('termux-app-input');
 const btnTermuxOpenTarget = document.getElementById('btn-termux-open-target');
+const btnListAndroidApps = document.getElementById('btn-list-android-apps');
 const termuxCmdInput = document.getElementById('termux-cmd-input');
 const btnTermuxRunCmd = document.getElementById('btn-termux-run-cmd');
 const termuxOutputConsole = document.getElementById('termux-output-console');
@@ -894,6 +895,37 @@ if (btnTermuxRunCmd && termuxCmdInput) {
 
     termuxCmdInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') btnTermuxRunCmd.click();
+    });
+}
+
+// Listar Aplicativos Instalados e Caminhos dos APKs
+if (btnListAndroidApps) {
+    btnListAndroidApps.addEventListener('click', async () => {
+        btnListAndroidApps.disabled = true;
+        termuxOutputConsole.textContent = '> Buscando lista de aplicativos e caminhos no Android (pm list packages)...';
+
+        try {
+            const res = await fetch('/api/termux/apps');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.apps)) {
+                let out = `📦 Total de Apps Encontrados: ${data.count}\n`;
+                out += `========================================================\n\n`;
+                data.apps.forEach((app, idx) => {
+                    out += `${idx + 1}. Pacote: ${app.packageName}\n`;
+                    if (app.apkPath) {
+                        out += `   Caminho: ${app.apkPath}\n`;
+                    }
+                    out += `\n`;
+                });
+                termuxOutputConsole.textContent = out;
+            } else {
+                termuxOutputConsole.textContent = `Erro ao listar apps: ${data.error || 'Resposta inválida'}`;
+            }
+        } catch (e) {
+            termuxOutputConsole.textContent = `Erro de conexão: ${e.message}\nCertifique-se de que o 'node termux-bridge.js' está rodando no Termux nativo.`;
+        } finally {
+            btnListAndroidApps.disabled = false;
+        }
     });
 }
 

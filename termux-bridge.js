@@ -109,26 +109,22 @@ const server = http.createServer(async (req, res) => {
             return sendJSON(res, result.success ? 200 : 500, result);
         }
 
-        // 3. Abrir aplicativo ou Activity no Android (am start)
+        // 3. Abrir aplicativo ou Activity no Android (am start / monkey / termux-open)
         if (req.method === 'POST' && pathname === '/android/open-app') {
             const { packageName, activity, uri, action, flags } = await parseBody(req);
 
-            let cmd = 'am start';
+            let cmd = '';
 
-            if (action) {
-                cmd += ` -a "${action}"`;
-            } else if (!packageName && uri) {
-                cmd += ' -a android.intent.action.VIEW';
-            }
-
-            if (packageName && activity) {
-                cmd += ` -n "${packageName}/${activity}"`;
-            } else if (packageName) {
-                cmd += ` -n $(cmd package resolve-activity --brief ${packageName} | tail -n 1)`;
-            }
-
-            if (uri) {
-                cmd += ` -d "${uri}"`;
+            if (packageName && !activity && !uri && !action) {
+                // Modo mais compatível e universal no Android sem root (não dá erro de permissão)
+                cmd = `monkey -p "${packageName}" -c android.intent.category.LAUNCHER 1`;
+            } else if (activity) {
+                cmd = `am start --user 0 -n "${packageName}/${activity}"`;
+            } else if (uri) {
+                cmd = `am start --user 0 -a android.intent.action.VIEW -d "${uri}"`;
+            } else {
+                let actionFlag = action ? `-a "${action}"` : '-a android.intent.action.MAIN';
+                cmd = `am start --user 0 ${actionFlag} -p "${packageName}"`;
             }
 
             if (flags) {
@@ -136,8 +132,30 @@ const server = http.createServer(async (req, res) => {
             }
 
             console.log(`[Bridge Open App] ${cmd}`);
-            const result = await runTermuxCommand(cmd);
+            let result = await runTermuxCommand(cmd);
+
+            // Fallback se o comando principal falhar
+            if (!result.success && packageName) {
+                console.log(`[Bridge Open App Fallback] Tentando via am start simples...`);
+                result = await runTermuxCommand(`am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "${packageName}"`);
+            }
+
             return sendJSON(res, result.success ? 200 : 500, result);
+        }
+
+        // 3.1 Listar aplicativos instalados no Android
+        if (req.method === 'GET' && pathname === '/android/apps') {
+            const result = await runTermuxCommand('pm list packages -f -3 || pm list packages -3 || pm list packages');
+            const lines = result.stdout.split('\n').filter(l => l.trim().startsWith('package:'));
+            const apps = lines.map(line => {
+                const raw = line.replace('package:', '').trim();
+                if (raw.includes('=')) {
+                    const parts = raw.split('=');
+                    return { apkPath: parts[0], packageName: parts[1] };
+                }
+                return { apkPath: '', packageName: raw };
+            });
+            return sendJSON(res, 200, { success: true, count: apps.length, apps: apps });
         }
 
         // 4. Abrir arquivo / URL com o aplicativo padrão do Android (termux-open ou termux-open-url)

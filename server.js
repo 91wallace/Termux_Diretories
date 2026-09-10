@@ -292,6 +292,16 @@ app.post('/api/termux/open-app', async (req, res) => {
     }
 });
 
+// Listar apps instalados no Android
+app.get('/api/termux/apps', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/apps', 'GET');
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
 // Abrir URL ou arquivo no Android
 app.post('/api/termux/open', async (req, res) => {
     try {
