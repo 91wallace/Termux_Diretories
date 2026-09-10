@@ -838,13 +838,13 @@ async function checkTermuxBridgeStatus() {
 
 function openTermuxModal() {
     if (!termuxActionsModal) return;
-    termuxActionsModal.classList.add('active');
+    termuxActionsModal.classList.add('open');
     checkTermuxBridgeStatus();
 }
 
 function closeTermuxModal() {
     if (!termuxActionsModal) return;
-    termuxActionsModal.classList.remove('active');
+    termuxActionsModal.classList.remove('open');
 }
 
 if (btnTermuxActions) btnTermuxActions.addEventListener('click', openTermuxModal);
