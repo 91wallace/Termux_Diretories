@@ -68,6 +68,20 @@ const toggleShowHidden = document.getElementById('toggle-show-hidden');
 const swatchesDirs = document.getElementById('swatches-dirs');
 const swatchesFiles = document.getElementById('swatches-files');
 
+// Modal Termux Bridge
+const termuxActionsModal = document.getElementById('termux-actions-modal');
+const btnTermuxActions = document.getElementById('btn-termux-actions');
+const btnCloseTermuxModal = document.getElementById('btn-close-termux-modal');
+const btnDoneTermuxModal = document.getElementById('btn-done-termux-modal');
+const btnCheckBridge = document.getElementById('btn-check-bridge');
+const bridgeStatusDot = document.getElementById('bridge-status-dot');
+const bridgeStatusText = document.getElementById('bridge-status-text');
+const termuxAppInput = document.getElementById('termux-app-input');
+const btnTermuxOpenTarget = document.getElementById('btn-termux-open-target');
+const termuxCmdInput = document.getElementById('termux-cmd-input');
+const btnTermuxRunCmd = document.getElementById('btn-termux-run-cmd');
+const termuxOutputConsole = document.getElementById('termux-output-console');
+
 let currentOpenedFile = null;
 
 // ==========================================
@@ -803,19 +817,6 @@ if (btnClearSearch) {
 // ==========================================
 // TERMUX BRIDGE UI LOGIC
 // ==========================================
-const termuxActionsModal = document.getElementById('termux-actions-modal');
-const btnTermuxActions = document.getElementById('btn-termux-actions');
-const btnCloseTermuxModal = document.getElementById('btn-close-termux-modal');
-const btnDoneTermuxModal = document.getElementById('btn-done-termux-modal');
-const btnCheckBridge = document.getElementById('btn-check-bridge');
-const bridgeStatusDot = document.getElementById('bridge-status-dot');
-const bridgeStatusText = document.getElementById('bridge-status-text');
-const termuxAppInput = document.getElementById('termux-app-input');
-const btnTermuxOpenTarget = document.getElementById('btn-termux-open-target');
-const termuxCmdInput = document.getElementById('termux-cmd-input');
-const btnTermuxRunCmd = document.getElementById('btn-termux-run-cmd');
-const termuxOutputConsole = document.getElementById('termux-output-console');
-
 async function checkTermuxBridgeStatus() {
     if (!bridgeStatusDot || !bridgeStatusText) return;
     bridgeStatusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
@@ -847,10 +848,22 @@ function closeTermuxModal() {
     termuxActionsModal.classList.remove('open');
 }
 
-if (btnTermuxActions) btnTermuxActions.addEventListener('click', openTermuxModal);
+if (btnTermuxActions) {
+    btnTermuxActions.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openTermuxModal();
+    });
+}
 if (btnCloseTermuxModal) btnCloseTermuxModal.addEventListener('click', closeTermuxModal);
 if (btnDoneTermuxModal) btnDoneTermuxModal.addEventListener('click', closeTermuxModal);
 if (btnCheckBridge) btnCheckBridge.addEventListener('click', checkTermuxBridgeStatus);
+
+if (termuxActionsModal) {
+    termuxActionsModal.addEventListener('click', (e) => {
+        if (e.target === termuxActionsModal) closeTermuxModal();
+    });
+}
 
 // Executar comando no Termux
 if (btnTermuxRunCmd && termuxCmdInput) {
