@@ -32,7 +32,13 @@
         </div>
 
         <!-- Header Actions -->
-        <div class="flex items-center gap-1 shrink-0">
+            <!-- Termux Actions Button -->
+            <button id="btn-termux-actions" type="button" class="text-slate-300 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex items-center justify-center text-emerald-400" title="Ações do Android & Termux">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            </button>
+
             <!-- New Item Button -->
             <button id="btn-new-item" type="button" class="text-slate-300 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex items-center justify-center" title="Novo Arquivo / Pasta">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -276,9 +282,58 @@
                 </div>
             </div>
 
-            <div class="px-4 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
-                <button id="btn-reset-colors" type="button" class="text-xs text-slate-400 hover:text-amber-400 transition-colors">Restaurar Padrões</button>
-                <button id="btn-done-settings" type="button" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors">Concluir</button>
+    <!-- ========================================== -->
+    <!-- MODAL DE CONTROLE TERMUX & ANDROID         -->
+    <!-- ========================================== -->
+    <div id="termux-actions-modal" class="modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>Controle Termux & Android</span>
+                </h3>
+                <button id="btn-close-termux-modal" type="button" class="text-slate-400 hover:text-white hover:bg-slate-800 w-7 h-7 rounded-lg flex items-center justify-center text-lg leading-none">&times;</button>
+            </div>
+
+            <div class="p-4 flex flex-col gap-4 overflow-y-auto">
+                <!-- Status do Bridge -->
+                <div id="termux-bridge-status-card" class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2">
+                        <span id="bridge-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                        <span id="bridge-status-text" class="text-slate-300 font-medium">Verificando Termux Bridge...</span>
+                    </div>
+                    <button id="btn-check-bridge" type="button" class="text-[11px] text-emerald-400 hover:underline">Reverificar</button>
+                </div>
+
+                <!-- Abertura Rápida de Apps / Links do Android -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-300">Abrir App ou URL no Android:</label>
+                    <div class="flex gap-2">
+                        <input id="termux-app-input" type="text" placeholder="ex: https://google.com ou com.brave.browser" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+                        <button id="btn-termux-open-target" type="button" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors">Abrir</button>
+                    </div>
+                </div>
+
+                <!-- Execução de Comandos Shell Nativo -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-300">Executar Comando no Termux Nativo:</label>
+                    <div class="flex gap-2">
+                        <input id="termux-cmd-input" type="text" placeholder="ex: termux-toast 'Olá!' ou pkg list-installed" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono placeholder-slate-600 focus:outline-none focus:border-emerald-500">
+                        <button id="btn-termux-run-cmd" type="button" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-lg text-xs font-semibold shrink-0 transition-colors">Rodar</button>
+                    </div>
+                </div>
+
+                <!-- Console de Resposta do Bridge -->
+                <div class="flex flex-col gap-1">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Terminal / Resposta:</span>
+                    <pre id="termux-output-console" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-300 min-h-[100px] max-h-[180px] overflow-y-auto whitespace-pre-wrap">Aguardando comando...</pre>
+                </div>
+            </div>
+
+            <div class="px-4 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-end">
+                <button id="btn-done-termux-modal" type="button" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors">Fechar</button>
             </div>
         </div>
     </div>

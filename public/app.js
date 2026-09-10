@@ -800,6 +800,130 @@ if (btnClearSearch) {
     });
 }
 
+// ==========================================
+// TERMUX BRIDGE UI LOGIC
+// ==========================================
+const termuxActionsModal = document.getElementById('termux-actions-modal');
+const btnTermuxActions = document.getElementById('btn-termux-actions');
+const btnCloseTermuxModal = document.getElementById('btn-close-termux-modal');
+const btnDoneTermuxModal = document.getElementById('btn-done-termux-modal');
+const btnCheckBridge = document.getElementById('btn-check-bridge');
+const bridgeStatusDot = document.getElementById('bridge-status-dot');
+const bridgeStatusText = document.getElementById('bridge-status-text');
+const termuxAppInput = document.getElementById('termux-app-input');
+const btnTermuxOpenTarget = document.getElementById('btn-termux-open-target');
+const termuxCmdInput = document.getElementById('termux-cmd-input');
+const btnTermuxRunCmd = document.getElementById('btn-termux-run-cmd');
+const termuxOutputConsole = document.getElementById('termux-output-console');
+
+async function checkTermuxBridgeStatus() {
+    if (!bridgeStatusDot || !bridgeStatusText) return;
+    bridgeStatusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+    bridgeStatusText.textContent = 'Checando conexão com Termux Bridge...';
+
+    try {
+        const res = await fetch('/api/termux/status');
+        const data = await res.json();
+        if (res.ok && data.status === 'online') {
+            bridgeStatusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+            bridgeStatusText.textContent = `Bridge Online (Node ${data.nodeVersion || ''} - Termux Host)`;
+        } else {
+            throw new Error(data.error || 'Offline');
+        }
+    } catch (e) {
+        bridgeStatusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        bridgeStatusText.textContent = 'Bridge Offline (Inicie: node termux-bridge.js no Termux)';
+    }
+}
+
+function openTermuxModal() {
+    if (!termuxActionsModal) return;
+    termuxActionsModal.classList.add('active');
+    checkTermuxBridgeStatus();
+}
+
+function closeTermuxModal() {
+    if (!termuxActionsModal) return;
+    termuxActionsModal.classList.remove('active');
+}
+
+if (btnTermuxActions) btnTermuxActions.addEventListener('click', openTermuxModal);
+if (btnCloseTermuxModal) btnCloseTermuxModal.addEventListener('click', closeTermuxModal);
+if (btnDoneTermuxModal) btnDoneTermuxModal.addEventListener('click', closeTermuxModal);
+if (btnCheckBridge) btnCheckBridge.addEventListener('click', checkTermuxBridgeStatus);
+
+// Executar comando no Termux
+if (btnTermuxRunCmd && termuxCmdInput) {
+    btnTermuxRunCmd.addEventListener('click', async () => {
+        const cmd = termuxCmdInput.value.trim();
+        if (!cmd) return;
+
+        btnTermuxRunCmd.disabled = true;
+        btnTermuxRunCmd.textContent = 'Rodando...';
+        termuxOutputConsole.textContent = `> ${cmd}\nExecutando no Termux nativo...`;
+
+        try {
+            const res = await fetch('/api/termux/exec', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
+            });
+            const data = await res.json();
+            const output = data.stdout || data.stderr || (data.success ? 'Comando executado com sucesso (sem saída).' : `Erro: ${data.error}`);
+            termuxOutputConsole.textContent = `> ${cmd}\n[Status: ${data.success ? 'Sucesso' : 'Falha'}]\n\n${output}`;
+        } catch (e) {
+            termuxOutputConsole.textContent = `Erro ao comunicar com o Bridge: ${e.message}\nCertifique-se de que o 'node termux-bridge.js' está rodando no Termux nativo.`;
+        } finally {
+            btnTermuxRunCmd.disabled = false;
+            btnTermuxRunCmd.textContent = 'Rodar';
+        }
+    });
+
+    termuxCmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btnTermuxRunCmd.click();
+    });
+}
+
+// Abrir App ou URL no Android
+if (btnTermuxOpenTarget && termuxAppInput) {
+    btnTermuxOpenTarget.addEventListener('click', async () => {
+        const target = termuxAppInput.value.trim();
+        if (!target) return;
+
+        btnTermuxOpenTarget.disabled = true;
+        btnTermuxOpenTarget.textContent = 'Abrindo...';
+        termuxOutputConsole.textContent = `> Abrindo no Android: ${target}...`;
+
+        try {
+            let res;
+            if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('/')) {
+                res = await fetch('/api/termux/open', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target })
+                });
+            } else {
+                res = await fetch('/api/termux/open-app', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ packageName: target })
+                });
+            }
+            const data = await res.json();
+            termuxOutputConsole.textContent = `> Abrir: ${target}\n[Status: ${data.success ? 'Sucesso' : 'Falha'}]\n${data.stdout || data.stderr || ''}`;
+        } catch (e) {
+            termuxOutputConsole.textContent = `Erro ao abrir: ${e.message}`;
+        } finally {
+            btnTermuxOpenTarget.disabled = false;
+            btnTermuxOpenTarget.textContent = 'Abrir';
+        }
+    });
+
+    termuxAppInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btnTermuxOpenTarget.click();
+    });
+}
+
 // Registro de Service Worker PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -813,3 +937,4 @@ if ('serviceWorker' in navigator) {
 applyCustomColors();
 updateHiddenStatusUI();
 initWebSocket();
+
