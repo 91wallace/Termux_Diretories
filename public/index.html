@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-950 text-slate-100 antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>Termux Directories</title>
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="Explorador e visualizador de diretórios nativo para Termux">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-slate-950 select-none">
+
+    <!-- Top Header -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-3 py-2.5 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <!-- App Icon / Logo -->
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                </svg>
+            </div>
+            <div class="flex flex-col min-w-0">
+                <h1 class="text-sm font-semibold tracking-wide text-slate-100 flex items-center gap-1.5 truncate">
+                    <span>Termux Directories</span>
+                    <span id="connection-status" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Conectado ao Termux"></span>
+                </h1>
+                <span id="stats-summary" class="text-[10px] text-slate-400 font-mono truncate">Carregando diretórios...</span>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center gap-1 shrink-0">
+            <!-- New Item Button -->
+            <button id="btn-new-item" type="button" class="text-slate-300 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex items-center justify-center" title="Novo Arquivo / Pasta">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+
+            <!-- Refresh Button -->
+            <button id="btn-refresh" type="button" class="text-slate-300 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex items-center justify-center" title="Recarregar">
+                <svg id="refresh-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+
+            <!-- Settings Button -->
+            <button id="btn-settings" type="button" class="text-slate-300 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex items-center justify-center" title="Configurações e Cores">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation & Breadcrumbs Bar -->
+    <div class="bg-slate-900/60 border-b border-slate-800/80 px-3 py-2 flex items-center gap-1.5 text-xs shrink-0">
+        <!-- Up Button (cd ..) -->
+        <button id="btn-nav-up" type="button" class="text-slate-400 hover:text-amber-400 hover:bg-slate-800 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0 font-bold" title="Subir nível (cd ..)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+        </button>
+
+        <!-- Home Quick Button -->
+        <button id="btn-nav-home" type="button" class="text-slate-400 hover:text-amber-400 hover:bg-slate-800 p-1.5 rounded-md transition-colors flex items-center justify-center shrink-0" title="Ir para Home (~)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+        </button>
+
+        <!-- Breadcrumbs Container -->
+        <div id="breadcrumbs-bar" class="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar font-mono text-[11.5px] py-0.5 text-slate-300">
+            <!-- Breadcrumbs inseridos dinamicamente -->
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-slate-950 px-3 py-2 border-b border-slate-800/60 flex items-center gap-2 shrink-0">
+        <div class="relative flex-1">
+            <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input id="search-input" type="search" placeholder="Filtrar arquivos e pastas..." class="w-full bg-slate-900 border border-slate-700/60 rounded-lg pl-8 pr-8 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40">
+            <button id="btn-clear-search" type="button" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-bold">&times;</button>
+        </div>
+
+        <!-- View Mode Switch (Tree vs Detailed List) -->
+        <div class="flex items-center bg-slate-900 border border-slate-700/60 rounded-lg p-0.5 shrink-0">
+            <button id="btn-view-tree" type="button" class="px-2 py-1 rounded text-xs transition-colors bg-slate-800 text-amber-400 font-medium flex items-center gap-1" title="Modo Árvore">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h7"></path>
+                </svg>
+                <span>Árvore</span>
+            </button>
+            <button id="btn-view-list" type="button" class="px-2 py-1 rounded text-xs transition-colors text-slate-400 hover:text-slate-200 flex items-center gap-1" title="Modo Detalhado">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                <span>Lista</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area (Explorer View) -->
+    <main class="flex-1 overflow-y-auto p-2.5 flex flex-col gap-0.5">
+        <!-- Tree View Container -->
+        <div id="tree-container" class="flex flex-col gap-0.5">
+            <!-- Nós gerados dinamicamente via JS -->
+        </div>
+
+        <!-- Detailed List View Container -->
+        <div id="list-container" class="hidden flex flex-col gap-1">
+            <!-- Itens detalhados inseridos dinamicamente via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden py-12 flex flex-col items-center justify-center text-center text-slate-500">
+            <svg class="w-12 h-12 stroke-slate-700 mb-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            <p class="text-sm font-medium">Pasta vazia</p>
+            <p class="text-xs text-slate-600 mt-1">Nenhum arquivo ou subdiretório encontrado</p>
+        </div>
+    </main>
+
+    <!-- Footer Bar -->
+    <footer class="bg-slate-900 border-t border-slate-800 px-3 py-2 flex items-center justify-between text-xs text-slate-400 shrink-0">
+        <div class="flex items-center gap-2">
+            <span id="current-path-text" class="font-mono text-[11px] truncate max-w-[220px] text-slate-300">~</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="btn-toggle-hidden-footer" type="button" class="text-[11px] hover:text-amber-400 transition-colors flex items-center gap-1">
+                <span id="hidden-indicator" class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                <span>Ocultos</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- MODAL DE VISUALIZAÇÃO / EDIÇÃO DE ARQUIVOS -->
+    <!-- ========================================== -->
+    <div id="file-viewer-modal" class="modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-slate-850 px-4 py-3 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2 min-w-0">
+                    <svg class="tree-file-icon w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    <div class="min-w-0">
+                        <h3 id="file-modal-title" class="text-sm font-semibold text-slate-100 font-mono truncate">arquivo.txt</h3>
+                        <p id="file-modal-meta" class="text-[10px] text-slate-400 font-mono">0 B</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button id="btn-file-copy" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5 font-medium" title="Copiar conteúdo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                        </svg>
+                        <span id="copy-btn-text">Copiar</span>
+                    </button>
+                    <button id="btn-file-save" type="button" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5" title="Salvar alterações">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span>Salvar</span>
+                    </button>
+                    <button id="btn-close-file-modal" type="button" class="text-slate-400 hover:text-white hover:bg-slate-800 w-8 h-8 rounded-lg flex items-center justify-center text-lg leading-none transition-colors">&times;</button>
+                </div>
+            </div>
+
+            <!-- Modal Body (Text Editor / Code Area) -->
+            <div class="flex-1 relative bg-slate-950 flex overflow-hidden">
+                <textarea id="file-modal-content" spellcheck="false" class="w-full h-full p-4 bg-transparent font-mono text-xs text-slate-200 resize-none focus:outline-none leading-relaxed overflow-auto"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL DE CRIAR NOVO ITEM (ARQUIVO / PASTA) -->
+    <!-- ========================================== -->
+    <div id="new-item-modal" class="modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden p-4 flex flex-col gap-3">
+            <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span>Criar Novo Item</span>
+            </h3>
+            
+            <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button id="tab-create-folder" type="button" class="flex-1 py-1.5 rounded-md text-xs font-medium bg-slate-800 text-amber-400 transition-colors">Nova Pasta</button>
+                <button id="tab-create-file" type="button" class="flex-1 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors">Novo Arquivo</button>
+            </div>
+
+            <div>
+                <label for="new-item-name" class="block text-[11px] text-slate-400 mb-1">Nome:</label>
+                <input id="new-item-name" type="text" placeholder="ex: meus_scripts ou index.js" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button id="btn-cancel-new-item" type="button" class="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Cancelar</button>
+                <button id="btn-confirm-new-item" type="button" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors">Criar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL DE CONFIGURAÇÕES E CORES             -->
+    <!-- ========================================== -->
+    <div id="settings-modal" class="modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>Personalização e Cores</span>
+                </h3>
+                <button id="btn-close-settings" type="button" class="text-slate-400 hover:text-white hover:bg-slate-800 w-7 h-7 rounded-lg flex items-center justify-center text-lg leading-none">&times;</button>
+            </div>
+
+            <div class="p-4 flex flex-col gap-4 overflow-y-auto max-h-[70vh]">
+                <!-- Cor das Pastas / Diretórios -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                        </svg>
+                        <span>Cor das Pastas (Diretórios):</span>
+                    </label>
+                    <div id="swatches-dirs" class="flex items-center gap-2 flex-wrap">
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#facc15]" data-color="#facc15" title="Amarelo (Padrão)"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#60a5fa]" data-color="#60a5fa" title="Azul"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#00d4ff]" data-color="#00d4ff" title="Azul Neon"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#4ade80]" data-color="#4ade80" title="Verde"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#00ff66]" data-color="#00ff66" title="Verde Neon"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#f472b6]" data-color="#f472b6" title="Rosa"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#a855f7]" data-color="#a855f7" title="Roxo"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#ff3366]" data-color="#ff3366" title="Vermelho Neon"></button>
+                    </div>
+                </div>
+
+                <!-- Cor dos Arquivos -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Cor dos Arquivos:</span>
+                    </label>
+                    <div id="swatches-files" class="flex items-center gap-2 flex-wrap">
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#9ca3af]" data-color="#9ca3af" title="Cinza (Padrão)"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#ffffff]" data-color="#ffffff" title="Branco"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#38bdf8]" data-color="#38bdf8" title="Ciano"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#34d399]" data-color="#34d399" title="Esmeralda"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#fbbf24]" data-color="#fbbf24" title="Âmbar"></button>
+                        <button type="button" class="color-swatch-btn w-6 h-6 rounded-full bg-[#c084fc]" data-color="#c084fc" title="Lavanda"></button>
+                    </div>
+                </div>
+
+                <!-- Preferência de Arquivos Ocultos -->
+                <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                    <div>
+                        <span class="text-xs font-medium text-slate-200">Exibir arquivos ocultos</span>
+                        <p class="text-[10px] text-slate-500">Arquivos iniciados com ponto (.)</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input id="toggle-show-hidden" type="checkbox" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="px-4 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+                <button id="btn-reset-colors" type="button" class="text-xs text-slate-400 hover:text-amber-400 transition-colors">Restaurar Padrões</button>
+                <button id="btn-done-settings" type="button" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors">Concluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Inicialização da Aplicação -->
+    <script src="/app.js"></script>
+</body>
+</html>

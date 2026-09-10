@@ -1,0 +1,22 @@
+{
+  "name": "termux-directories",
+  "version": "1.0.0",
+  "description": "App standalone para visualização e navegação de diretórios e arquivos no Termux / Android / Web",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "termux",
+    "directory-viewer",
+    "file-manager",
+    "pwa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}

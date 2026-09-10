@@ -1,0 +1,123 @@
+:root {
+  --color-dir-item: #facc15;
+  --color-file-item: #9ca3af;
+  --color-prompt-line: #facc15;
+  --color-accent: #38bdf8;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dinâmica de Cores Personalizadas */
+svg.tree-dir-icon,
+span.tree-dir-name,
+.dir-color {
+  color: var(--color-dir-item, #facc15) !important;
+}
+
+svg.tree-file-icon,
+span.tree-file-name,
+.file-color {
+  color: var(--color-file-item, #9ca3af) !important;
+}
+
+/* Nós da Árvore de Diretórios */
+.tree-node {
+  user-select: none;
+}
+
+.tree-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease;
+  border-radius: 4px;
+}
+
+.tree-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.tree-folder-title:hover {
+  filter: brightness(1.15);
+}
+
+/* Swatches de Cores */
+.color-swatch-btn {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.color-swatch-btn:active {
+  transform: scale(0.9);
+}
+.color-swatch-btn.active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+/* Animações de Modais */
+.modal-backdrop {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-sheet {
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open .modal-sheet {
+  transform: translateY(0);
+}
+
+/* Visualizador de Código */
+pre code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.line-numbers {
+  user-select: none;
+  text-align: right;
+  padding-right: 12px;
+  color: #475569;
+}
+
+/* Animação suave para loading */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-subtle {
+  animation: pulseSubtle 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
