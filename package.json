@@ -4,7 +4,8 @@
   "description": "App standalone para visualização e navegação de diretórios e arquivos no Termux / Android / Web",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:bridge": "node termux-bridge.js"
   },
   "keywords": [
     "termux",

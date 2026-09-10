@@ -12,6 +12,7 @@ const wss = new WebSocket.Server({ server });
 const PORT = parseInt(process.env.PORT, 10) || 3005;
 const HOST = process.env.HOST || '0.0.0.0';
 const DEFAULT_HOME = process.env.HOME || '/root';
+const TERMUX_BRIDGE_URL = process.env.TERMUX_BRIDGE_URL || 'http://127.0.0.1:9099';
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -244,6 +245,94 @@ app.post('/api/rename', (req, res) => {
 });
 
 // ==========================================
+// TERMUX BRIDGE API (Execução e Android Intents)
+// ==========================================
+
+// Helper para encaminhar requisições ao Termux Bridge
+async function forwardToTermuxBridge(endpoint, method = 'POST', body = null) {
+    const fetchOptions = {
+        method: method,
+        headers: { 'Content-Type': 'application/json' }
+    };
+    if (body && method !== 'GET') {
+        fetchOptions.body = JSON.stringify(body);
+    }
+    const response = await fetch(`${TERMUX_BRIDGE_URL}${endpoint}`, fetchOptions);
+    const data = await response.json();
+    return { status: response.status, data };
+}
+
+// Status do Termux Bridge
+app.get('/api/termux/status', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/status', 'GET');
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Termux Bridge offline ou inacessível em ' + TERMUX_BRIDGE_URL, details: err.message });
+    }
+});
+
+// Executar comando no Termux nativo
+app.post('/api/termux/exec', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/exec', 'POST', req.body);
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// Abrir app no Android
+app.post('/api/termux/open-app', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/open-app', 'POST', req.body);
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// Abrir URL ou arquivo no Android
+app.post('/api/termux/open', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/open', 'POST', req.body);
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// Enviar notificação nativa
+app.post('/api/termux/notification', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/notification', 'POST', req.body);
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// Enviar toast
+app.post('/api/termux/toast', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/toast', 'POST', req.body);
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// Bateria do Android
+app.get('/api/termux/battery', async (req, res) => {
+    try {
+        const { status, data } = await forwardToTermuxBridge('/android/battery', 'GET');
+        res.status(status).json(data);
+    } catch (err) {
+        res.status(503).json({ success: false, error: 'Erro ao conectar ao Termux Bridge: ' + err.message });
+    }
+});
+
+// ==========================================
 // WEBSOCKET HANDLERS (Comunicação Real-Time)
 // ==========================================
 wss.on('connection', (ws) => {
@@ -382,6 +471,55 @@ wss.on('connection', (ws) => {
                         error: err ? err.message : null
                     }));
                 });
+            }
+
+            // Executar comando no Termux via WebSocket
+            if (parsed.action === 'termux_exec') {
+                const requestId = parsed.requestId;
+                try {
+                    const { data } = await forwardToTermuxBridge('/exec', 'POST', {
+                        command: parsed.command,
+                        timeout: parsed.timeout
+                    });
+                    ws.send(JSON.stringify({
+                        type: 'termux_exec_result',
+                        requestId: requestId,
+                        ...data
+                    }));
+                } catch (err) {
+                    ws.send(JSON.stringify({
+                        type: 'termux_exec_result',
+                        requestId: requestId,
+                        success: false,
+                        error: err.message
+                    }));
+                }
+            }
+
+            // Abrir App no Android via WebSocket
+            if (parsed.action === 'termux_open_app') {
+                const requestId = parsed.requestId;
+                try {
+                    const { data } = await forwardToTermuxBridge('/android/open-app', 'POST', {
+                        packageName: parsed.packageName,
+                        activity: parsed.activity,
+                        uri: parsed.uri,
+                        action: parsed.actionName,
+                        flags: parsed.flags
+                    });
+                    ws.send(JSON.stringify({
+                        type: 'termux_open_app_result',
+                        requestId: requestId,
+                        ...data
+                    }));
+                } catch (err) {
+                    ws.send(JSON.stringify({
+                        type: 'termux_open_app_result',
+                        requestId: requestId,
+                        success: false,
+                        error: err.message
+                    }));
+                }
             }
 
         } catch (e) {

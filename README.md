@@ -1,22 +1,47 @@
-# 📁 Termux Directories - Standalone App
+# 📁 Termux Directories - Standalone App & Android Bridge
 
-Aplicativo web PWA mobile-first standalone para navegação, exploração e gerenciamento de arquivos e diretórios no **Termux / Android / Linux**.
+Aplicativo web PWA mobile-first standalone para navegação, exploração e gerenciamento de arquivos e diretórios no **PRoot / Termux / Android / Linux**, com capacidade de acionar comandos e funções nativas do Android via **Termux Bridge**.
+
+---
+
+## 🏗️ Arquitetura PRoot + Termux Bridge
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     ANDROID SYSTEM                      │
+│                                                         │
+│   ┌─────────────────────────────────────────────────┐   │
+│   │             TERMUX NATIVO (HOST)                │   │
+│   │   • termux-bridge.js (Porta 9099 - sem deps)    │   │
+│   │   • Executa: am start, termux-open, intents     │   │
+│   └──────────────────────▲──────────────────────────┘   │
+│                          │ HTTP (localhost:9099)        │
+│   ┌──────────────────────▼──────────────────────────┐   │
+│   │                 PROOT (LINUX)                   │   │
+│   │   • server.js (Porta 3005 - Express/WS)         │   │
+│   │   • Acesso total aos arquivos do Linux          │   │
+│   │   • Interface Web PWA / Gerenciador             │   │
+│   └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 🚀 Como Executar
 
-### 1. Instalar dependências (apenas na 1ª vez)
+### 1. No Termux Nativo (Host Android):
+Inicie o bridge leve do Termux (não precisa de dependências externas):
 ```bash
-cd /root/projects/Skill_agy/Termux_Diretories
-npm install
+node termux-bridge.js
+# Ficará ativo em: http://127.0.0.1:9099
 ```
 
-### 2. Iniciar o servidor
+### 2. No PRoot (Debian/Ubuntu):
+Inicie o servidor principal da aplicação web:
 ```bash
+npm install # apenas na primeira vez
 npm start
-# Ou especificando a porta:
-PORT=3005 node server.js
+# Ficará ativo em: http://127.0.0.1:3005
 ```
 
 ### 3. Acessar no Navegador ou Instalar como App (PWA)
@@ -25,7 +50,21 @@ PORT=3005 node server.js
 
 ---
 
-## ✨ Funcionalidades
+## 📡 Endpoints da API do Termux Bridge
+
+O servidor no PRoot disponibiliza rotas integradas para acionar o Android via Termux:
+
+* `GET /api/termux/status` - Verifica se o bridge do Termux está online.
+* `POST /api/termux/exec` - Executa qualquer comando shell no Termux nativo. Payload: `{"command": "ls -la"}`.
+* `POST /api/termux/open-app` - Abre um aplicativo do Android via intent (`am start`). Payload: `{"packageName": "com.brave.browser"}` ou `{"uri": "https://google.com"}`.
+* `POST /api/termux/open` - Abre um arquivo ou link com o app padrão do Android (`termux-open`). Payload: `{"target": "/sdcard/documento.pdf"}`.
+* `POST /api/termux/notification` - Dispara uma notificação nativa do Android. Payload: `{"title": "Título", "content": "Mensagem"}`.
+* `POST /api/termux/toast` - Mostra um Toast nativo na tela do Android. Payload: `{"text": "Operação realizada!"}`.
+* `GET /api/termux/battery` - Retorna status da bateria do dispositivo.
+
+---
+
+## ✨ Funcionalidades da Interface
 
 * 🌳 **Visualização em Árvore Hierárquica:** Expansão e recolhimento instantâneo de subpastas com chevrons animados.
 * 📋 **Modo Lista Detalhada:** Alternância rápida entre visão em árvore e visão em tabela detalhada com tamanho de arquivos e metadados.
